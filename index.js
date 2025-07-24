@@ -16,7 +16,7 @@ const config = {
 const client = new line.Client(config);
 
 // URL Firebase Realtime Database REST API
-const FIREBASE_USER_LOG = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/";
+const FIREBASE_USER_LOG = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command";
 
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
