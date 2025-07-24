@@ -1,6 +1,6 @@
 // index.js
 const admin = require('firebase-admin');
-const serviceAccount = require('./fir-b5ac2-firebase-adminsdk-fbsvc-cae38c182f.json');
+const serviceAccount = require('fir-b5ac2-firebase-adminsdk-fbsvc-cae38c182f.json');
 
 
 // initialize Firebase Admin SDK
