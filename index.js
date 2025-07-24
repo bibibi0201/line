@@ -8,8 +8,8 @@
 
     // ข้อมูลจาก LINE Developers
     const config = {
-    channelAccessToken: '/j8guPJYAmr+gtl9azccHox1XKGUw7e2H4QULHFaE8zDc4pprcWRGu4P0T8yFphoyzpBCxC1e/RH0jaq0o0chNuOZ2Jdn2h8ZxgCpgvFK5KbI30sXzpC7ogJhiyOf2C6FvG9v/5wo3Cxi8qkUU6HOAdB04t89/1O/w1cDnyilFU=', // ใส่ Token จริงจาก LINE
-    channelSecret: '2a510e00f9c37e7f870b51a931af955a',          
+        channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
+        channelSecret: process.env.CHANNEL_SECRET,        
     };
 
     const client = new line.Client(config);
