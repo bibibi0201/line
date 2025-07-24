@@ -16,7 +16,7 @@ const config = {
 const client = new line.Client(config);
 
 // Firebase Realtime Database path
-const FIREBASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command.json";
+const FIREBASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command/led.json";
 
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
