@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-app.use(express.json()); 
+app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
@@ -9,7 +9,9 @@ app.post('/webhook', (req, res) => {
 
   events.forEach(event => {
     if (event.type === 'message' && event.message.type === 'text') {
-      console.log('User sent message:', event.message.text);
+      const userId = event.source.userId;
+      const messageText = event.message.text;
+      console.log(`User (${userId}) sent message: ${messageText}`);
     }
   });
 
