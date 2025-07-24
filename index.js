@@ -1,49 +1,69 @@
-    const express = require('express');
-    const line = require('@line/bot-sdk');
+const express = require('express');
+const line = require('@line/bot-sdk');
+const fetch = require('node-fetch'); // ถ้ายังไม่ได้ติดตั้ง ให้รัน `npm install node-fetch`
 
-    const app = express();
-    app.use(express.json());
+const app = express();
+app.use(express.json());
 
-    const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-    // ข้อมูลจาก LINE Developers
-    const config = {
-    channelAccessToken: '/j8guPJYAmr+gtl9azccHox1XKGUw7e2H4QULHFaE8zDc4pprcWRGu4P0T8yFphoyzpBCxC1e/RH0jaq0o0chNuOZ2Jdn2h8ZxgCpgvFK5KbI30sXzpC7ogJhiyOf2C6FvG9v/5wo3Cxi8qkUU6HOAdB04t89/1O/w1cDnyilFU=', // ใส่ Token จริงจาก LINE
-    channelSecret: '2a510e00f9c37e7f870b51a931af955a',          
-    };
+// ข้อมูลจาก LINE Developers
+const config = {
+  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.CHANNEL_SECRET,
+};
 
-    const client = new line.Client(config);
+const client = new line.Client(config);
 
-    app.post('/webhook', (req, res) => {
-    const events = req.body.events;
+// URL Firebase Realtime Database REST API
+const FIREBASE_USER_LOG = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
-    events.forEach(event => {
-        if (event.type === 'message' && event.message.type === 'text') {
-        const userId = event.source.userId;
-        const messageText = event.message.text;
-        const replyToken = event.replyToken;
+app.post('/webhook', async (req, res) => {
+  const events = req.body.events;
 
-        console.log(`User (${userId}) sent message: ${messageText}`);
+  // ประมวลผล events ทีละตัว (await ใน for-of เพื่อไม่ให้หลุด Promise)
+  for (const event of events) {
+    if (event.type === 'message' && event.message.type === 'text') {
+      const userId = event.source.userId;
+      const messageText = event.message.text;
+      const replyToken = event.replyToken;
 
-        // ตัวอย่าง: ตอบกลับข้อความที่พิมพ์มา
-        const replyMessage = {
-            type: 'text',
-            text: `คุณพิมพ์ว่า: ${messageText}`
-        };
+      console.log(`User (${userId}) sent message: ${messageText}`);
 
-        client.replyMessage(replyToken, replyMessage)
-            .then(() => {
-            console.log('Replied successfully');
-            })
-            .catch(err => {
-            console.error('Error replying:', err);  
-            });
-        }
-    });
+      // บันทึก userId และข้อความลง Firebase
+      try {
+        await fetch(`${FIREBASE_USER_LOG}/${userId}.json`, {
+          method: 'PUT', // หรือ 'PATCH' ถ้าจะอัปเดตบางส่วน
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lastMessage: messageText,
+            timestamp: new Date().toISOString()
+          }),
+        });
+        console.log('Saved user data to Firebase');
+      } catch (err) {
+        console.error('Error saving to Firebase:', err);
+      }
 
-    res.sendStatus(200);
-    });
+      // สร้างข้อความตอบกลับ
+      const replyMessage = {
+        type: 'text',
+        text: `คุณพิมพ์ว่า: ${messageText}`
+      };
 
-    app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    });
+      // ส่งข้อความตอบกลับใน LINE
+      try {
+        await client.replyMessage(replyToken, replyMessage);
+        console.log('Replied successfully');
+      } catch (err) {
+        console.error('Error replying:', err);
+      }
+    }
+  }
+
+  res.sendStatus(200);
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
