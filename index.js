@@ -15,7 +15,7 @@ const config = {
 const client = new line.Client(config);
 
 // ฐาน URL สำหรับ Firebase
-const FIREBASE_BASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app";
+const FIREBASE_BASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command/led.json";
 
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
