@@ -24,27 +24,32 @@ app.post('/webhook', async (req, res) => {
   for (const event of events) {
     if (event.type === 'message' && event.message.type === 'text') {
       const userId = event.source.userId;
-      const messageText = event.message.text.trim().toLowerCase(); 
+      const messageText = event.message.text.trim().toLowerCase();
 
       const replyToken = event.replyToken;
 
       console.log(`User (${userId}) sent message: ${messageText}`);
 
-      // บันทึกคำสั่ง on/off ลง Firebase
+      // บันทึกคำสั่ง on/off พร้อม userId ลง Firebase
       if (messageText === "on" || messageText === "off") {
         try {
+          const data = {
+            status: messageText,
+            userId: userId
+          };
+
           await fetch(FIREBASE_URL, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(messageText),
+            body: JSON.stringify(data),
           });
-          console.log(`LED status updated to: ${messageText}`);
+          console.log(`LED status updated to: ${messageText} by user: ${userId}`);
         } catch (err) {
           console.error('Error updating LED status to Firebase:', err);
         }
       }
 
-      // ตอบกลับใน LINE
+      // ตอบกลับข้อความใน LINE
       const replyMessage = {
         type: 'text',
         text: `คุณพิมพ์ว่า: ${messageText}`
