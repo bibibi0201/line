@@ -1,13 +1,13 @@
 const express = require('express');
 const line = require('@line/bot-sdk');
-const fetch = require('node-fetch'); 
+const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// ข้อมูลจาก LINE Developers
+// LINE Bot config
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.CHANNEL_SECRET,
@@ -15,8 +15,8 @@ const config = {
 
 const client = new line.Client(config);
 
-// URL Firebase Realtime Database REST API
-const FIREBASE_USER_LOG = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command";
+// Firebase Realtime Database path
+const FIREBASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command.json";
 
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
@@ -24,33 +24,31 @@ app.post('/webhook', async (req, res) => {
   for (const event of events) {
     if (event.type === 'message' && event.message.type === 'text') {
       const userId = event.source.userId;
-      const messageText = event.message.text;
+      const messageText = event.message.text.trim().toLowerCase(); // แปลงเป็นตัวพิมพ์เล็ก
+
       const replyToken = event.replyToken;
 
       console.log(`User (${userId}) sent message: ${messageText}`);
 
-      // บันทึก userId และข้อความลง Firebase
-      try {
-        await fetch(`${FIREBASE_USER_LOG}/${userId}.json`, {
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            lastMessage: messageText,
-            timestamp: new Date().toISOString()
-          }),
-        });
-        console.log('Saved user data to Firebase');
-      } catch (err) {
-        console.error('Error saving to Firebase:', err);
+      // บันทึกคำสั่ง on/off ลง Firebase
+      if (messageText === "on" || messageText === "off") {
+        try {
+          await fetch(FIREBASE_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(messageText),
+          });
+          console.log(`LED status updated to: ${messageText}`);
+        } catch (err) {
+          console.error('Error updating LED status to Firebase:', err);
+        }
       }
 
-      // สร้างข้อความตอบกลับ
       const replyMessage = {
         type: 'text',
         text: `คุณพิมพ์ว่า: ${messageText}`
       };
 
-      // ส่งข้อความตอบกลับใน LINE
       try {
         await client.replyMessage(replyToken, replyMessage);
         console.log('Replied successfully');
