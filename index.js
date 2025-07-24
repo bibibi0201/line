@@ -1,49 +1,55 @@
-    const express = require('express');
-    const line = require('@line/bot-sdk');
+const express = require('express');
+const line = require('@line/bot-sdk');
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
 
-    const app = express();
-    app.use(express.json());
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/"
+});
 
-    const PORT = process.env.PORT || 3000;
+const db = admin.database();
 
-    // ข้อมูลจาก LINE Developers
-    const config = {
-        channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
-        channelSecret: process.env.CHANNEL_SECRET,        
-    };
+const app = express();
+app.use(express.json());
 
-    const client = new line.Client(config);
+const PORT = process.env.PORT || 3000;
 
-    app.post('/webhook', (req, res) => {
-    const events = req.body.events;
+const config = {
+  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.CHANNEL_SECRET,
+};
 
-    events.forEach(event => {
-        if (event.type === 'message' && event.message.type === 'text') {
-        const userId = event.source.userId;
-        const messageText = event.message.text;
-        const replyToken = event.replyToken;
+const client = new line.Client(config);
 
-        console.log(`User (${userId}) sent message: ${messageText}`);
+app.post('/webhook', (req, res) => {
+  const events = req.body.events;
 
-        // ตัวอย่าง: ตอบกลับข้อความที่พิมพ์มา
-        const replyMessage = {
-            type: 'text',
-            text: `คุณพิมพ์ว่า: ${messageText}`
-        };
+  events.forEach(event => {
+    if (event.type === 'message' && event.message.type === 'text') {
+      const userId = event.source.userId;
+      const messageText = event.message.text;
+      const replyToken = event.replyToken;
 
-        client.replyMessage(replyToken, replyMessage)
-            .then(() => {
-            console.log('Replied successfully');
-            })
-            .catch(err => {
-            console.error('Error replying:', err);
-            });
-        }
-    });
+      const messagesRef = db.ref('messages').child(userId);
+      messagesRef.push({
+        text: messageText,
+        timestamp: Date.now()
+      }).catch(console.error);
 
-    res.sendStatus(200);
-    });
+      const replyMessage = {
+        type: 'text',
+        text: `คุณพิมพ์ว่า: ${messageText}`
+      };
 
-    app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    });
+      client.replyMessage(replyToken, replyMessage)
+        .catch(console.error);
+    }
+  });
+
+  res.sendStatus(200);
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
