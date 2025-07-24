@@ -25,13 +25,12 @@ app.post('/webhook', async (req, res) => {
     if (event.type === 'message' && event.message.type === 'text') {
       const userId = event.source.userId;
       const messageText = event.message.text.trim().toLowerCase();
-
       const replyToken = event.replyToken;
 
       console.log(`User (${userId}) sent message: ${messageText}`);
 
-      // บันทึกคำสั่ง on/off พร้อม userId ลง Firebase
       if (messageText === "on" || messageText === "off") {
+        // ถ้าเป็นคำสั่ง on หรือ off
         try {
           const data = {
             status: messageText,
@@ -44,22 +43,35 @@ app.post('/webhook', async (req, res) => {
             body: JSON.stringify(data),
           });
           console.log(`LED status updated to: ${messageText} by user: ${userId}`);
+
+          // ตอบกลับสถานะ LED
+          const replyText = (messageText === "on")
+            ? "ไฟติด"
+            : "ไฟดับ";
+
+          await client.replyMessage(replyToken, {
+            type: 'text',
+            text: replyText
+          });
+
         } catch (err) {
           console.error('Error updating LED status to Firebase:', err);
+          await client.replyMessage(replyToken, {
+            type: 'text',
+            text: "Error"
+          });
         }
-      }
-
-      // ตอบกลับข้อความใน LINE
-      const replyMessage = {
-        type: 'text',
-        text: `คุณพิมพ์ว่า: ${messageText}`
-      };
-
-      try {
-        await client.replyMessage(replyToken, replyMessage);
-        console.log('Replied successfully');
-      } catch (err) {
-        console.error('Error replying:', err);
+      } else {
+        // กรณีข้อความทั่วไป
+        try {
+          await client.replyMessage(replyToken, {
+            type: 'text',
+            text: `คุณพิมพ์ข้อความว่า: "${event.message.text}"`
+          });
+          console.log('Replied with generic message');
+        } catch (err) {
+          console.error('Error replying:', err);
+        }
       }
     }
   }
