@@ -1,6 +1,6 @@
 const express = require('express');
 const line = require('@line/bot-sdk');
-const fetch = require('node-fetch'); // ถ้ายังไม่ได้ติดตั้ง ให้รัน `npm install node-fetch`
+const fetch = require('node-fetch'); 
 
 const app = express();
 app.use(express.json());
@@ -21,7 +21,6 @@ const FIREBASE_USER_LOG = "https://fir-b5ac2-default-rtdb.asia-southeast1.fireba
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
 
-  // ประมวลผล events ทีละตัว (await ใน for-of เพื่อไม่ให้หลุด Promise)
   for (const event of events) {
     if (event.type === 'message' && event.message.type === 'text') {
       const userId = event.source.userId;
@@ -33,7 +32,7 @@ app.post('/webhook', async (req, res) => {
       // บันทึก userId และข้อความลง Firebase
       try {
         await fetch(`${FIREBASE_USER_LOG}/${userId}.json`, {
-          method: 'PUT', // หรือ 'PATCH' ถ้าจะอัปเดตบางส่วน
+          method: 'PUT', 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             lastMessage: messageText,
