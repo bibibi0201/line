@@ -15,8 +15,8 @@ const config = {
 
 const client = new line.Client(config);
 
-// Firebase Realtime Database path
-const FIREBASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command.json";
+// Firebase Realtime Database base URL (ไม่รวม .json)
+const FIREBASE_BASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/messages";
 
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
@@ -29,49 +29,51 @@ app.post('/webhook', async (req, res) => {
 
       console.log(`User (${userId}) sent message: ${messageText}`);
 
-      if (messageText === "on" || messageText === "off") {
-        // ถ้าเป็นคำสั่ง on หรือ off
-        try {
-          const data = {
-            status: messageText,
-            userId: userId
-          };
+      // สร้าง object ข้อมูลที่ต้องการบันทึก
+      const data = {
+        status: messageText,
+        timestamp: Date.now()
+      };
 
-          await fetch(FIREBASE_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
-          console.log(`LED status updated to: ${messageText} by user: ${userId}`);
+      // URL สำหรับบันทึกข้อมูลของแต่ละผู้ใช้
+      const userMessageURL = `${FIREBASE_BASE_URL}/${userId}.json`;
 
-          // ตอบกลับสถานะ LED
-          const replyText = (messageText === "on")
-            ? "ไฟติด"
-            : "ไฟดับ";
+      try {
+        // บันทึกข้อความลง Firebase (แยกตาม user และไม่เขียนทับ)
+        await fetch(userMessageURL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        console.log(`Saved message "${messageText}" for user ${userId}`);
+      } catch (err) {
+        console.error('Error saving message to Firebase:', err);
+      }
 
-          await client.replyMessage(replyToken, {
-            type: 'text',
-            text: replyText
-          });
+      // ตอบกลับข้อความ
+      try {
+        let replyText;
 
-        } catch (err) {
-          console.error('Error updating LED status to Firebase:', err);
-          await client.replyMessage(replyToken, {
-            type: 'text',
-            text: "Error"
-          });
+        if (messageText === "on") {
+          replyText = "ไฟติด";
+        } else if (messageText === "off") {
+          replyText = "ไฟดับ";
+        } else {
+          replyText = `คุณพิมพ์ข้อความว่า: "${event.message.text}"`;
         }
-      } else {
-        // กรณีข้อความทั่วไป
-        try {
-          await client.replyMessage(replyToken, {
-            type: 'text',
-            text: `คุณพิมพ์ข้อความว่า: "${event.message.text}"`
-          });
-          console.log('Replied with generic message');
-        } catch (err) {
-          console.error('Error replying:', err);
-        }
+
+        await client.replyMessage(replyToken, {
+          type: 'text',
+          text: replyText
+        });
+
+        console.log('Replied to user');
+      } catch (err) {
+        console.error('Error replying to LINE:', err);
+        await client.replyMessage(replyToken, {
+          type: 'text',
+          text: "Error"
+        });
       }
     }
   }
