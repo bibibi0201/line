@@ -31,7 +31,7 @@ app.post('/webhook', async (req, res) => {
 
       // สร้าง object ข้อมูลที่ต้องการบันทึก
       const data = {
-        status: messageText,
+        message: messageText,
         timestamp: Date.now()
       };
 
