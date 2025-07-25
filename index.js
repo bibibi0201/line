@@ -15,7 +15,7 @@ const config = {
 
 const client = new line.Client(config);
 
-// Firebase Realtime Database base URL (ไม่รวม .json)
+// Firebase Realtime Database base URL 
 const FIREBASE_BASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/messages";
 
 app.post('/webhook', async (req, res) => {
@@ -29,17 +29,17 @@ app.post('/webhook', async (req, res) => {
 
       console.log(`User (${userId}) sent message: ${messageText}`);
 
-      // สร้าง object ข้อมูลที่ต้องการบันทึก
+      // สร้าง object 
       const data = {
         message: messageText,
         timestamp: Date.now()
       };
 
-      // URL สำหรับบันทึกข้อมูลของแต่ละผู้ใช้
+      // URL 
       const userMessageURL = `${FIREBASE_BASE_URL}/${userId}.json`;
 
       try {
-        // บันทึกข้อความลง Firebase (แยกตาม user และไม่เขียนทับ)
+        // บันทึกข้อความลง Firebase 
         await fetch(userMessageURL, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
