@@ -1,4 +1,3 @@
-//ใช้ได้
 const express = require('express');
 const line = require('@line/bot-sdk');
 const fetch = require('node-fetch');
@@ -8,7 +7,6 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// LINE Bot config
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.CHANNEL_SECRET,
@@ -16,64 +14,100 @@ const config = {
 
 const client = new line.Client(config);
 
-// Firebase Realtime Database path
-const FIREBASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app/command.json";
+const FIREBASE_BASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
 
   for (const event of events) {
-    if (event.type === 'message' && event.message.type === 'text') {
-      const userId = event.source.userId;
-      const messageText = event.message.text.trim().toLowerCase();
-      const replyToken = event.replyToken;
+    if (event.type !== 'message' || event.message.type !== 'text') continue;
 
-      console.log(`User (${userId}) sent message: ${messageText}`);
+    const userMessage = event.message.text.toLowerCase();
+    const userId = event.source.userId;
 
-      if (messageText === "on" || messageText === "off") {
-        // ถ้าเป็นคำสั่ง on หรือ off
-        try {
-          const data = {
-            status: messageText,
-            userId: userId
-          };
-
-          await fetch(FIREBASE_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
-          console.log(`LED status updated to: ${messageText} by user: ${userId}`);
-
-          // ตอบกลับสถานะ LED
-          const replyText = (messageText === "on")
-            ? "ไฟติด"
-            : "ไฟดับ";
-
-          await client.replyMessage(replyToken, {
-            type: 'text',
-            text: replyText
-          });
-
-        } catch (err) {
-          console.error('Error updating LED status to Firebase:', err);
-          await client.replyMessage(replyToken, {
-            type: 'text',
-            text: "Error"
-          });
-        }
-      } else {
-    
-        try {
-          await client.replyMessage(replyToken, {
-            type: 'text',
-            text: `คุณพิมพ์ข้อความว่า: "${event.message.text}"`
-          });
-          console.log('Replied with generic message');
-        } catch (err) {
-          console.error('Error replying:', err);
-        }
+    if (userMessage.startsWith("connect ")) {
+      const deviceId = userMessage.split(" ")[1];
+      if (!deviceId) {
+        await client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: 'กรุณาพิมพ์ว่า connect <deviceId>',
+        });
+        continue;
       }
+
+      // บันทึก deviceId ให้ userId
+      const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
+      await fetch(userUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: deviceId }),
+      });
+
+      await client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: `เชื่อมต่อกับบอร์ด ${deviceId} เรียบร้อยแล้ว ✅`,
+      });
+      continue;
+    }
+
+    if (userMessage === "disconnect") {
+      // ลบ deviceId mapping ของ user
+      const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
+      await fetch(userUrl, { method: 'DELETE' });
+
+      await client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: 'ตัดการเชื่อมต่อกับบอร์ดเรียบร้อยแล้ว',
+      });
+      continue;
+    }
+
+    // เช็ค deviceId ที่เชื่อมของ user
+    const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
+    const userRes = await fetch(userUrl);
+    const userData = await userRes.json();
+    const deviceId = userData?.deviceId;
+
+    if (deviceId) {
+      // PUT คำสั่งลง Firebase
+      const msgUrl = `${FIREBASE_BASE_URL}/messages/${deviceId}.json`;
+      const body = {
+        status: userMessage,
+        userId: userId,
+        timestamp: Date.now(),
+      };
+
+      await fetch(msgUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      let reply = '';
+      if (userMessage === 'on') reply = 'ไฟเปิดแล้ว ✅';
+      else if (userMessage === 'off') reply = 'ไฟปิดแล้ว ❌';
+      else reply = `ส่งคำสั่ง "${userMessage}" ไปยังบอร์ด ${deviceId}`;
+
+      await client.replyMessage(event.replyToken, { type: 'text', text: reply });
+
+    } else {
+      // ยังไม่ได้เชื่อมต่อ
+      const unlinkedUrl = `${FIREBASE_BASE_URL}/unlinked/${userId}.json`;
+      const body = {
+        message: userMessage,
+        timestamp: Date.now(),
+      };
+
+      await fetch(unlinkedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      await client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: 'คุณยังไม่ได้เชื่อมบอร์ด พิมพ์ connect <deviceId> ก่อนใช้งาน',
+      });
     }
   }
 
@@ -81,5 +115,5 @@ app.post('/webhook', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
