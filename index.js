@@ -92,7 +92,7 @@ app.post('/webhook', async (req, res) => {
 
     } else {
       // ยังไม่ได้เชื่อมต่อ
-      const unlinkedUrl = `${FIREBASE_BASE_URL}/unlinked/${userId}.json`;
+      const unlinkedUrl = `${FIREBASE_BASE_URL}/nosubs/${userId}.json`;
       const body = {
         message: userMessage,
         timestamp: Date.now(),
@@ -117,3 +117,4 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
