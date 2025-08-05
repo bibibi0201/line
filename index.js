@@ -14,7 +14,7 @@ const config = {
 
 const client = new line.Client(config);
 
-const FIREBASE_BASE_URL = "fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app";
+const FIREBASE_BASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 app.post('/webhook', async (req, res) => {
   const events = req.body.events;
@@ -120,4 +120,5 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
 
