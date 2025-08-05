@@ -97,7 +97,7 @@ app.post('/webhook', async (req, res) => {
       timestamp: Date.now(),
     };
 
-    await fetch(msgUrl, {
+    fetch(msgUrl, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -120,6 +120,7 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
 
 
 
