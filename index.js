@@ -1,6 +1,7 @@
 const express = require('express');
 const line = require('@line/bot-sdk');
 const fetch = require('node-fetch');
+const { message } = require('statuses');
 
 const app = express();
 app.use(express.json());
@@ -91,6 +92,25 @@ app.post('/webhook', async (req, res) => {
     // ---------- ส่งคำสั่งไปยังบอร์ด ----------
     const deviceId = userData.deviceId;
     const msgUrl = `${FIREBASE_BASE_URL}/messages/${deviceId}.json`;
+    let reply = '';
+
+    if (userMessage === 'status') {
+      const statusRes = await fetch(msgUrl);
+      const statusData = await statusRes.json(),
+
+      if (statusData && statusData.status){
+        const currentStatus = statusData.status.toLowerCase();
+        if (currentStatus == "on") {
+          reply = "status now led on";
+        }else if (currentStatus == "off"){
+          reply = "status now led off";
+        }else (`currentStatus === ${currentStatus}`)
+          reply = `status now ${currentStatus}`; 
+      } else {
+        reply = "no status";
+      }
+    }
+
     const body = {
       status: userMessage,
       userId: userId,
@@ -103,7 +123,6 @@ app.post('/webhook', async (req, res) => {
       body: JSON.stringify(body),
     });
 
-    let reply = '';
     if (userMessage === 'on') reply = 'ไฟเปิดแล้ว ✅';
     else if (userMessage === 'off') reply = 'ไฟปิดแล้ว ❌';
     else reply = `ส่งคำสั่ง "${userMessage}" ไปยังบอร์ด ${deviceId}`;
@@ -120,7 +139,6 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
 
 
 
