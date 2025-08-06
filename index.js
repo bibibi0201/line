@@ -13,7 +13,6 @@ const config = {
 };
 
 const client = new line.Client(config);
-
 const FIREBASE_BASE_URL = "https://fir-b5ac2-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 app.post('/webhook', async (req, res) => {
@@ -62,7 +61,7 @@ app.post('/webhook', async (req, res) => {
       continue;
     }
 
-    // ---------- GET DEVICE INFO ----------
+    // ---------- ตรวจสอบการเชื่อมต่อ ----------
     const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
     const userRes = await fetch(userUrl);
     const userData = await userRes.json();
@@ -114,7 +113,6 @@ app.post('/webhook', async (req, res) => {
         type: 'text',
         text: reply,
       });
-
       continue;
     }
 
@@ -134,9 +132,12 @@ app.post('/webhook', async (req, res) => {
 
       reply = userMessage === 'on' ? 'ไฟเปิดแล้ว ✅' : 'ไฟปิดแล้ว ❌';
     }
-    // ---------- TEXT COMMAND ----------
+
+    // ---------- คำสั่งอื่น (ข้อความทั่วไป) ----------
     else {
       const timestamp = Date.now();
+
+      // 1) บันทึกข้อความย้อนหลัง
       const textUrl = `${msgUrl}/texts/${timestamp}.json`;
       const textBody = {
         message: userMessage,
@@ -149,9 +150,23 @@ app.post('/webhook', async (req, res) => {
         body: JSON.stringify(textBody),
       });
 
+      // 2) อัปเดตข้อความล่าสุดใน Realtime Database
+      const body = {
+        message: userMessage,
+        userId,
+        timestamp: timestamp,
+      };
+
+      await fetch(msgUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
       reply = `บันทึกข้อความ "${userMessage}" แล้ว`;
     }
 
+    // ---------- ส่งข้อความตอบกลับ ----------
     await client.replyMessage(event.replyToken, {
       type: 'text',
       text: reply,
@@ -162,5 +177,5 @@ app.post('/webhook', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
