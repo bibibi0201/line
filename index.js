@@ -96,20 +96,26 @@ app.post('/webhook', async (req, res) => {
 
     if (userMessage === 'status') {
       const statusRes = await fetch(msgUrl);
-      const statusData = await statusRes.json();
+      const statusData = await statusRes.json(),
 
-      if (statusData && statusData.status){
+        if (statusData && statusData.status){
         const currentStatus = statusData.status.toLowerCase();
-        if (currentStatus == "on") {
-          reply = "status now led on";
-        }else if (currentStatus == "off"){
-          reply = "status now led off";
+            if (currentStatus == "on") {
+            reply = "status now led on";
+            }else if (currentStatus == "off"){
+            reply = "status now led off";
+            }else (`currentStatus === ${currentStatus}`)
+            reply = `status now ${currentStatus}`; 
         }else {
-          reply = `status now ${currentStatus}`;
+            reply = "no status";
         }
-      } else {
-        reply = "no status";
-      }
+        await client.replyMessage(event.replyToken, {
+            type: 'text',
+            text: reply,
+    });
+    
+    continue;
+
     }
 
     const body = {
@@ -140,9 +146,3 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
-
-
-
-
