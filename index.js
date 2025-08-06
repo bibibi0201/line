@@ -96,7 +96,7 @@ app.post('/webhook', async (req, res) => {
 
     if (userMessage === 'status') {
       const statusRes = await fetch(msgUrl);
-      const statusData = await statusRes.json(),
+      const statusData = await statusRes.json();
 
         if (statusData && statusData.status){
         const currentStatus = statusData.status.toLowerCase();
@@ -146,3 +146,4 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
