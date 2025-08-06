@@ -1,7 +1,6 @@
 const express = require('express');
 const line = require('@line/bot-sdk');
 const fetch = require('node-fetch');
-const { message } = require('statuses');
 
 const app = express();
 app.use(express.json());
@@ -41,7 +40,7 @@ app.post('/webhook', async (req, res) => {
       await fetch(userUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId: deviceId }),
+        body: JSON.stringify({ deviceId }),
       });
 
       await client.replyMessage(event.replyToken, {
@@ -52,7 +51,7 @@ app.post('/webhook', async (req, res) => {
     }
 
     // ---------- DISCONNECT ----------
-    if (userMessage.trim().toLowerCase() === "disconnect") {
+    if (userMessage === "disconnect") {
       const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
       await fetch(userUrl, { method: 'DELETE' });
 
@@ -63,11 +62,11 @@ app.post('/webhook', async (req, res) => {
       continue;
     }
 
+    // ---------- GET DEVICE INFO ----------
     const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
     const userRes = await fetch(userUrl);
     const userData = await userRes.json();
 
-    // ตรวจสอบว่าไม่มี deviceId
     if (!userData || !userData.deviceId) {
       const unlinkedUrl = `${FIREBASE_BASE_URL}/nosubs/${userId}.json`;
       const body = {
@@ -89,50 +88,69 @@ app.post('/webhook', async (req, res) => {
       continue;
     }
 
-    // ---------- ส่งคำสั่งไปยังบอร์ด ----------
     const deviceId = userData.deviceId;
     const msgUrl = `${FIREBASE_BASE_URL}/messages/${deviceId}.json`;
     let reply = '';
 
+    // ---------- STATUS ----------
     if (userMessage === 'status') {
       const statusRes = await fetch(msgUrl);
       const statusData = await statusRes.json();
 
-        if (statusData && statusData.status){
+      if (statusData && statusData.status) {
         const currentStatus = statusData.status.toLowerCase();
-            if (currentStatus == "on") {
-            reply = "status now led on";
-            }else if (currentStatus == "off"){
-            reply = "status now led off";
-            }else (`currentStatus === ${currentStatus}`)
-            reply = `status now ${currentStatus}`; 
-        }else {
-            reply = "no status";
+        if (currentStatus === "on") {
+          reply = "สถานะปัจจุบัน: ไฟเปิดอยู่ ✅";
+        } else if (currentStatus === "off") {
+          reply = "สถานะปัจจุบัน: ไฟปิดอยู่ ❌";
+        } else {
+          reply = `สถานะปัจจุบัน: ${currentStatus}`;
         }
-        await client.replyMessage(event.replyToken, {
-            type: 'text',
-            text: reply,
-    });
-    
-    continue;
+      } else {
+        reply = "ยังไม่มีสถานะของไฟ";
+      }
 
+      await client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: reply,
+      });
+
+      continue;
     }
 
-    const body = {
-      status: userMessage,
-      userId: userId,
-      timestamp: Date.now(),
-    };
+    // ---------- ON / OFF ----------
+    if (userMessage === 'on' || userMessage === 'off') {
+      const body = {
+        status: userMessage,
+        userId,
+        timestamp: Date.now(),
+      };
 
-    await fetch(msgUrl, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+      await fetch(msgUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
-    if (userMessage === 'on') reply = 'ไฟเปิดแล้ว ✅';
-    else if (userMessage === 'off') reply = 'ไฟปิดแล้ว ❌';
-    else reply = `ส่งคำสั่ง "${userMessage}" ไปยังบอร์ด ${deviceId}`;
+      reply = userMessage === 'on' ? 'ไฟเปิดแล้ว ✅' : 'ไฟปิดแล้ว ❌';
+    }
+    // ---------- TEXT COMMAND ----------
+    else {
+      const timestamp = Date.now();
+      const textUrl = `${msgUrl}/texts/${timestamp}.json`;
+      const textBody = {
+        message: userMessage,
+        userId,
+      };
+
+      await fetch(textUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(textBody),
+      });
+
+      reply = `บันทึกข้อความ "${userMessage}" แล้ว`;
+    }
 
     await client.replyMessage(event.replyToken, {
       type: 'text',
@@ -146,4 +164,3 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
