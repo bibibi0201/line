@@ -38,7 +38,7 @@ app.post('/webhook', async (req, res) => {
 
       const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
       await fetch(userUrl, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deviceId: deviceId }),
       });
@@ -75,7 +75,7 @@ app.post('/webhook', async (req, res) => {
       };
 
       await fetch(unlinkedUrl, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -98,7 +98,7 @@ app.post('/webhook', async (req, res) => {
     };
 
     await fetch(msgUrl, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -120,6 +120,7 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
 
 
 
