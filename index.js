@@ -67,7 +67,7 @@ app.post('/webhook', async (req, res) => {
     const userData = await userRes.json();
 
     if (!userData || !userData.deviceId) {
-      const unlinkedUrl = `${FIREBASE_BASE_URL}/nosubs/${userId}.json`;
+      const unlinkedUrl = `${FIREBASE_BASE_URL}/noconnect/${userId}.json`;
       const body = {
         message: userMessage,
         timestamp: Date.now(),
@@ -179,6 +179,7 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
 
 
 
