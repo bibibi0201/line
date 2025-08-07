@@ -92,7 +92,7 @@ app.post('/webhook', async (req, res) => {
     let reply = '';
 
     // ---------- STATUS ----------
-    if (userMessage === 'status') {
+    if (userMessage.trim().toLowerCase() === 'status') {
       const statusRes = await fetch(msgUrl);
       const statusData = await statusRes.json();
 
@@ -179,6 +179,7 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
 
 
 
