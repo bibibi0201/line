@@ -50,7 +50,7 @@ app.post('/webhook', async (req, res) => {
     }
 
     // ---------- DISCONNECT ----------
-    if (userMessage === "disconnect") {
+    if (userMessage.trim().toLoweCase() === "disconnect") {
       const userUrl = `${FIREBASE_BASE_URL}/users/${userId}.json`;
       await fetch(userUrl, { method: 'DELETE' });
 
@@ -179,5 +179,6 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
 
 
